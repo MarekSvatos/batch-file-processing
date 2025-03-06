@@ -1,88 +1,71 @@
-# Assignment: Batch File-Processing Feature
+# Assignment: Modular Data Pipeline Infrastructure
+
+## Overview
+
+Design and implement a modular data pipeline system where files are accepted via a Main-Backend REST API and then submitted to processing pipelines. The Main-Backend integrates an AI Extraction service that leverages OpenAI.
 
 ## Context
 
-The application displays a dataset in a tabular format. Users can upload a **batch of files**; each file must be processed to produce a new record in the dataset.
+Users will upload files through the Main-Backend REST API. Each file is processed through one or more pipelines to generate dataset records and artifacts (e.g., previews and thumbnails). The pipelines are defined by flow logic that handles various outcomes (success or failure). Pipelines should be dynamically configurable in e.g. yaml.
 
-### Available Infrastructure
+## Available Infrastructure
 
-- **Postgres**  
-- **Amazon S3**  
-- **Kafka**  
-- **Redis**  
-- **Dolphin Scheduler**  
-- **Preview Service**  
-- **Self-hosted OCR**  
-- **Amazon Textract**
+- **Postgres:** For storing file metadata and pipeline states.
+- **Amazon S3:** For file storage.
+- **Kafka/Redis:** For messaging and coordination.
+- **Preview Service, Self-Hosted OCR, Amazon Textract:** For file content extraction.
+- **Main-Backend:**
+  - Accepts file uploads via a REST API.
+  - Integrates the AI Extraction service that calls OpenAI.
 
 ## Feature Requirements
 
-When users upload files in bulk, each file goes through **three pipelines**:
+1. **Modular Pipeline Processing**
+   - **Flow-Driven Design:** Pipelines are defined by their flow logic, outlining the processing steps and transitions.
+   - **Example Pipeline Flows:**
+     - **AI Record Extraction Pipeline Flow:**
+       1. **Initial Extraction (Tika):**  
+          Attempt to extract text using Tika. If successful, proceed directly to record extraction.
+       2. **Fallback to Self-Hosted OCR:**  
+          If Tika fails, use Self-Hosted OCR to extract text.
+       3. **Fallback to Amazon Textract:**  
+          If OCR fails, use Amazon Textract to extract the text.
+       4. **Record Extraction:**  
+          With the extracted text, call the AI Extraction service (via OpenAI) to generate the final record.
+     - **File View Components Pipeline Flow:**
+       1. **Preview Generation:**  
+          Generate an in-app preview.
+       2. **Thumbnail Generation:**  
+          Regardless of the preview result, generate a thumbnail to complete the pipeline.
 
-1. **Main Pipeline**  
-   - The file is persisted and linked to the dataset.  
-   - The text content of the file is extracted. If needed self-hosted ocr is used.  
-   - If self-hosted ocr fails or is unavailable, the system should use Amazon Textract instead.  
-   - The extracted text is sent to an AI extraction service, which generates a dataset record linked to that file.
+2. **File Processing Workflow**
+   - Files are ingested by the Main-Backend through its REST API and submitted to the appropriate pipelines based on file type and processing needs.
+   - The integrated AI Extraction service processes the extracted text to create records.
 
-2. **Preview Generation**  
-   - Certain file types (for example, documents) should have an in-app preview generated.
+3. **API Requirements**
+   - **File Upload Endpoint:**  
+     A REST endpoint that accepts file uploads (single or multiple) and submits them to the processing pipelines.
+   - **Pipeline State Endpoint:**  
+     A REST endpoint that returns the current state of the processing pipeline for each file, including the active step and any generated artifacts.
 
-3. **Thumbnail Generation**  
-   - Whenever possible, generate a thumbnail for the file.
+4. **Key Challenges**
+   - Managing concurrent uploads and processing.
+   - Ensuring fair resource usage.
+   - Handling fallback mechanisms and service downtime gracefully.
+   - Providing real-time visibility into processing statuses.
+   - Monitoring and logging key events and metrics.
 
-## API Requirements
+5. **Database Schema Design**
+   - **Files:**  
+     Store file metadata, storage references, and the current processing state.
+   - **Pipelines:**  
+     Store configuration details and the state of each processing pipeline.
 
-1. **Batch Upload**  
-   An endpoint to upload multiple files at once, initiating processing.
-
-2. **Status Listing**  
-   An endpoint to list files in a dataset, showing their current processing stage and any artifacts (e.g., record, preview, thumbnail).
-
-3. **Removal**  
-   An endpoint to remove files (and their generated records) once processing is completed or no longer needed.
-
-## Key Challenges
-
-1. **Concurrent Uploads**  
-   Large numbers of files can be uploaded simultaneously.
-
-2. **Fair Resource Usage**  
-   No single user or upload should block others.
-
-3. **Fallback**  
-   If the primary text-extraction mechanism fails, the system should fall back to Amazon Textract.
-
-4. **Service Downtime**  
-   If any service is temporarily unavailable, the process should handle it gracefully.
-
-5. **Visibility**  
-   Users must see each file’s status at any point in the pipelines.
-
-## Monitoring & Logging
-
-- A minimal approach should be in place to track system performance (e.g., error rates, processing times).  
-- Basic logs for critical events (e.g., failures, retries) should be collected.
-
-## Database Schema Design
-
-Candidates should propose a **basic database schema**. This includes details on how you plan to store:
-- File references
-- Processing status
-- Extracted text
-- Any generated artifacts (e.g., preview, thumbnail)
-
-## Timeline & MVP
-
-- The entire solution must be implementable in **no more than two weeks** for an initial MVP.  
-- It should be **iterable** for future enhancements.
+6. **Timeline & MVP**
+   - The solution should be designed to enable an initial MVP within two weeks, with room for iterative enhancements and the addition of new pipelines.
 
 ## Instructions for the Candidate
 
-Design a **high-level architecture** that satisfies these requirements. Demonstrate how you will:
-
-- Handle the **three pipelines** (main processing, previews, and thumbnails)  
-- Deal with **fallback** for text extraction  
-- Manage **concurrency** and **service downtime**  
-- Propose a **basic database schema** for storing files, extracted data, and artifacts  
-- Incorporate **basic monitoring and logging**
+- Present a high-level architecture showing file ingestion, pipeline dispatch, and status tracking.
+- Provide a simple schema for storing file and pipeline information.
+- Briefly explain your approach to managing flow transitions and fallback mechanisms.
