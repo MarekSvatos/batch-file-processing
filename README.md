@@ -13,7 +13,9 @@ Users will upload files through the Main-Backend REST API. Each file is processe
 - **Postgres:** For storing file metadata and pipeline states.
 - **Amazon S3:** For file storage.
 - **Kafka/Redis:** For messaging and coordination.
-- **Preview Service, Self-Hosted OCR, Amazon Textract:** For file content extraction.
+- **Preview Service** - exposes async webhook api
+- **Self-Hosted OCR** - exposes async webhook api
+- **Amazon Textract OCR** - return jobId and processes job async. Provides endpoint that returns result for jobId
 - **Main-Backend:**
   - Accepts file uploads via a REST API.
   - Integrates the AI Extraction service that calls OpenAI.
@@ -55,12 +57,9 @@ Users will upload files through the Main-Backend REST API. Each file is processe
    - Providing real-time visibility into processing statuses.
    - Monitoring and logging key events and metrics.
 
-5. **Database Schema Design**
-   - **Files:**  
-     Store file metadata, storage references, and the current processing state.
-   - **Pipelines:**  
-     Store configuration details and the state of each processing pipeline.
-
+5. **Persistance Design**
+   - Define how would e.g. files, pipelines, artifact(preview, thumbnail) be stored
+     
 6. **Timeline & MVP**
    - The solution should be designed to enable an initial MVP within two weeks, with room for iterative enhancements and the addition of new pipelines.
 
